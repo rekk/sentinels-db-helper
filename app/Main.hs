@@ -1,27 +1,18 @@
-{-# LANGUAGE DeriveGeneric #-}
-{-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE OverloadedLabels #-}
-{-# LANGUAGE DuplicateRecordFields #-}
+-- Helper to create a structured database of cards with metadata and images.
+-- Every card needs an image. Images should be located in a subfolder called images.
 
-import Control.Monad.IO.Class (liftIO)
+module Main where
+
 import Data.Text (pack)
-import Database.Selda
-import Database.Selda.SQLite
 import System.Directory (doesFileExist)
 import Text.Read (readMaybe)
+import Control.Monad.IO.Class (liftIO)
 
-data Card = Card 
-  { group :: Text
-  , name  :: Text
-  , hp    :: Maybe Int }
-  deriving Generic
-instance SqlRow Card
-
-file = "cards.sqlite"
+import CardDB
 
 main :: IO ()
 main = do
-  putStrLn "(1) Add hero | (2) Add villain | (3) Add environment | (4) List cards"
+  putStrLn "(1) Add hero | (2) Add villain | (3) Add environment | (4) Remove card | (5) List cards"
   option <- getLine
   case readMaybe option :: Maybe Int of
     Just 1 -> do 
@@ -29,50 +20,30 @@ main = do
       name <- getLine
       putStrLn "Enter hero HP: "
       hp <- getLine
-      heroInsert (pack name) (Just (read hp :: Int)) 
+      putStrLn "Enter image path: "
+      img <- getLine
+      insertHero (pack name) (pack img) (Just (read hp :: Int))
       main
     Just 2 -> do 
       putStrLn "Enter villain name: "
       name <- getLine
       putStrLn "Enter villain HP: "
       hp <- getLine
-      villainInsert (pack name) (Just (read hp :: Int)) 
+      putStrLn "Enter image path: "
+      img <- getLine
+      insertVillain (pack name) (pack img) (Just (read hp :: Int)) 
       main
     Just 3 -> do 
       putStrLn "Enter environment name: "
       name <- getLine
-      envInsert (pack name) Nothing
+      putStrLn "Enter image path: "
+      img <- getLine
+      insertEnv (pack name) (pack img) Nothing
       main
-    Just 4 -> printCards >> main
+    Just 4 -> do
+      putStrLn "Enter card name to be deleted: "
+      name <- getLine
+      removeCard (pack name)
+      main
+    Just 5 -> printCards >> main
     _ -> putStrLn "Invalid option." >> main
-
--- General card insertion
-cards :: Table Card
-cards = table "cards" [#name :- primary]
-
-cardInsert :: Text -> Text -> Maybe Int -> IO ()
-cardInsert group name hp = withSQLite file $ do
-  tryCreateTable cards
-  result <- tryInsert cards
-      [ Card group name hp ]
-  liftIO $ putStrLn $ 
-    if result
-    then "Successfully created " <> show name <> " with " <> show hp <> " HP." 
-    else "Error creating entry."
-
--- Insert cards by group
-hero    = "hero"
-villain = "villain"
-env     = "env"
-
-heroInsert    = cardInsert hero
-villainInsert = cardInsert villain 
-envInsert     = cardInsert env 
-
-printCards :: IO ()
-printCards = withSQLite file $ do
-  list <- query $ do
-    card <- select cards
-    return (card ! #group :*: card ! #name :*: card ! #hp)
-  liftIO $ print list 
-

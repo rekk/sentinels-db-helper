@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 90b302c606be17e2980d3b7d0ea83e142fb26e29922bedadae9f0360f6c25b93
+-- hash: da9ec338ec8f664fbb88d9ec14dbbba857ed9dec882564f491f1a343ac2808a1
 
 name:           sentinels-db-helper
 version:        0.1.0.0
@@ -26,7 +26,7 @@ source-repository head
 
 library
   exposed-modules:
-      Lib
+      CardDB
   other-modules:
       Paths_sentinels_db_helper
   hs-source-dirs:
